@@ -41,18 +41,28 @@ const exploreLink = computed(() => {
 
     <div class="spacer" shrink xl:hidden />
     <NavSideItem :text="$t('nav.home')" to="/home" icon="i-ri:home-5-line" user-only :command="command" />
-    <NavSideItem :text="$t('nav.notifications')" :to="notificationsLink" icon="i-ri:notification-4-line" user-only :command="command">
+    <NavSideItem :text="$t('nav.personalized')" to="/personalized" icon="i-ri:user-star-line" :command="command" />
+    <NavSideItem
+      :text="$t('nav.notifications')" :to="notificationsLink" icon="i-ri:notification-4-line" user-only
+      :command="command"
+    >
       <template #icon>
         <div flex relative>
           <div class="i-ri:notification-4-line" text-xl />
-          <div v-if="notifications" class="top-[-0.3rem] right-[-0.3rem]" absolute font-bold rounded-full h-4 w-4 text-xs bg-primary text-inverted flex items-center justify-center>
+          <div
+            v-if="notifications" class="top-[-0.3rem] right-[-0.3rem]" absolute font-bold rounded-full h-4 w-4
+            text-xs bg-primary text-inverted flex items-center justify-center
+          >
             {{ notifications < 10 ? notifications : '•' }}
           </div>
         </div>
       </template>
     </NavSideItem>
     <NavSideItem :text="$t('nav.conversations')" to="/conversations" icon="i-ri:at-line" user-only :command="command" />
-    <NavSideItem :text="$t('nav.favourites')" to="/favourites" :icon="useStarFavoriteIcon ? 'i-ri:star-line' : 'i-ri:heart-3-line'" user-only :command="command" />
+    <NavSideItem
+      :text="$t('nav.favourites')" to="/favourites"
+      :icon="useStarFavoriteIcon ? 'i-ri:star-line' : 'i-ri:heart-3-line'" user-only :command="command"
+    />
     <NavSideItem :text="$t('nav.bookmarks')" to="/bookmarks" icon="i-ri:bookmark-line" user-only :command="command" />
 
     <div class="spacer" shrink hidden sm:block />
@@ -60,9 +70,18 @@ const exploreLink = computed(() => {
 
     <div class="spacer" shrink hidden sm:block />
     <NavSideItem :text="$t('nav.explore')" :to="exploreLink" icon="i-ri:compass-3-line" :command="command" />
-    <NavSideItem :text="$t('nav.local')" :to="isHydrated ? `/${currentServer}/public/local` : '/public/local'" icon="i-ri:group-2-line " :command="command" />
-    <NavSideItem :text="$t('nav.federated')" :to="isHydrated ? `/${currentServer}/public` : '/public'" icon="i-ri:earth-line" :command="command" />
-    <NavSideItem :text="$t('nav.lists')" :to="isHydrated ? `/${currentServer}/lists` : '/lists'" icon="i-ri:list-check" user-only :command="command" />
+    <NavSideItem
+      :text="$t('nav.local')" :to="isHydrated ? `/${currentServer}/public/local` : '/public/local'"
+      icon="i-ri:group-2-line " :command="command"
+    />
+    <NavSideItem
+      :text="$t('nav.federated')" :to="isHydrated ? `/${currentServer}/public` : '/public'"
+      icon="i-ri:earth-line" :command="command"
+    />
+    <NavSideItem
+      :text="$t('nav.lists')" :to="isHydrated ? `/${currentServer}/lists` : '/lists'" icon="i-ri:list-check"
+      user-only :command="command"
+    />
     <NavSideItem :text="$t('nav.hashtags')" to="/hashtags" icon="i-ri:hashtag" user-only :command="command" />
 
     <div class="spacer" shrink hidden sm:block />
