@@ -58,3 +58,18 @@ export function reorderedTimeline(items: mastodon.v1.Status[], context: mastodon
   }
   return newItems
 }
+
+// show every 5th post
+export function PersonalizedReorderedTimeline(items: mastodon.v1.Status[], context: mastodon.v1.FilterContext = 'public') {
+  const newItems = removeFilteredItems(items, context)
+
+  const filteredItems = []
+
+  for (let i = 0; i < newItems.length; i++) {
+    if (i % 5 === 0) {
+      filteredItems.push(newItems[i])
+    }
+  }
+
+  return filteredItems
+}

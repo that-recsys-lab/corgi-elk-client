@@ -169,6 +169,9 @@ export interface Status {
   bookmarked?: boolean | null
   /** Have you pinned this status? Only appears if the status is pin-able. */
   pinned?: boolean | null
+  /** CORGI Features */
+  more_like_this?: boolean // Define the property for more like this
+  less_like_this?: boolean // Define the property for less like this
 }
 
 export interface Field {

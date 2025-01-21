@@ -2,7 +2,7 @@
 import type { mastodon } from 'masto'
 
 const props = defineProps<{
-  status: mastodon.v1.Status
+  status: mastodon.v1.Status & { more_like_this?: boolean }
   details?: boolean
   command?: boolean
 }>()
@@ -21,6 +21,8 @@ const {
   toggleBookmark,
   toggleFavourite,
   toggleReblog,
+  toggleMoreLikeThis,
+  toggleLessLikeThis,
 } = useStatusActions(props)
 
 function reply() {
@@ -94,6 +96,44 @@ function reply() {
             keypath="action.favourite_count"
             :count="status.favouritesCount"
           />
+        </template>
+      </StatusActionButton>
+    </div>
+
+    <div flex-1>
+      <StatusActionButton
+        :content="$t('action.more_like_this')"
+        color="text-teal"
+        hover="text-teal"
+        elk-group-hover="bg-teal/10"
+        icon="i-ri:thumb-up-line"
+        :active-icon="status.more_like_this ? 'i-ri:thumb-up-fill' : 'i-ri:thumb-up-line'"
+        :disabled="isLoading.moreLikeThis"
+        :active="!!status.more_like_this"
+        :command="command"
+        @click="toggleMoreLikeThis()"
+      >
+        <template #text>
+          <!-- Add custom text if needed for more like this -->
+        </template>
+      </StatusActionButton>
+    </div>
+
+    <div flex-1>
+      <StatusActionButton
+        :content="$t('action.less_like_this')"
+        color="text-teal"
+        hover="text-teal"
+        elk-group-hover="bg-teal/10"
+        icon="i-ri:thumb-down-line"
+        :active-icon="status.less_like_this ? 'i-ri:thumb-down-fill' : 'i-ri:thumb-down-line'"
+        :disabled="isLoading.lessLikeThis"
+        :active="!!status.less_like_this"
+        :command="command"
+        @click="toggleLessLikeThis()"
+      >
+        <template #text>
+          <!-- Add custom text if needed for less like this -->
         </template>
       </StatusActionButton>
     </div>
