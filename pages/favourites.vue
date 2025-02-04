@@ -1,11 +1,10 @@
 <script setup lang="ts">
-definePageMeta({
-  middleware: 'auth',
-})
+import TimelineFavourites from '~/components/timeline/TimelineFavourites.vue'
+
+definePageMeta({ middleware: 'auth' })
 
 const { t } = useI18n()
 const useStarFavoriteIcon = usePreferences('useStarFavoriteIcon')
-
 useHydratedHead({
   title: () => t('nav.favourites'),
 })

@@ -1,13 +1,13 @@
 import type { mastodon } from 'masto'
-import logInteraction from './logger' // CORGI Logger
+import { logger } from './logger'
 
 type Action = 'reblogged' | 'favourited' | 'bookmarked' | 'pinned' | 'muted'
 type CountField = 'reblogsCount' | 'favouritesCount'
 
 export interface StatusActionsProps {
   status: mastodon.v1.Status
-  more_like_this?: boolean // Define the property for more like this CORGI feature
-  less_like_this?: boolean // Define the property for less like this CORGI feature
+  more_like_this?: boolean // CORGI feature
+  less_like_this?: boolean // CORGI feature
 }
 
 export function useStatusActions(props: StatusActionsProps) {
@@ -17,30 +17,25 @@ export function useStatusActions(props: StatusActionsProps) {
 
   watch(
     () => props.status,
-    val => status.value = { ...val },
+    val => (status.value = { ...val }),
     { deep: true, immediate: true },
   )
 
-  // Use different states to let the user press different actions right after the other
   const isLoading = ref({
     reblogged: false,
     favourited: false,
     bookmarked: false,
     pinned: false,
-    translation: false,
     muted: false,
-    moreLikeThis: false, // new CORGI feature
-    lessLikeThis: false, // new CORGI feature
+    moreLikeThis: false, // CORGI feature
+    lessLikeThis: false, // CORGI feature
   })
 
-  // Temporary storage for CORGI non-native features
-  const tempValues = {
-    moreLikeThis: false,
-    lessLikeThis: false,
-  }
-
-  async function toggleStatusAction(action: Action, fetchNewStatus: () => Promise<mastodon.v1.Status>, countField?: CountField) {
-    // check login
+  async function _toggleStatusAction(
+    action: Action,
+    fetchNewStatus: () => Promise<mastodon.v1.Status>,
+    countField?: CountField,
+  ) {
     if (!checkLogin())
       return
 
@@ -48,111 +43,167 @@ export function useStatusActions(props: StatusActionsProps) {
 
     isLoading.value[action] = true
     const isCancel = status.value[action]
-    fetchNewStatus().then((newStatus) => {
-      // when the action is cancelled, the count is not updated highly likely (if they're the same)
-      // issue of Mastodon API
-      if (isCancel && countField && prevCount === newStatus[countField])
-        newStatus[countField] -= 1
+    fetchNewStatus()
+      .then((newStatus) => {
+        if (isCancel && countField && prevCount === newStatus[countField])
+          newStatus[countField] -= 1
 
-      Object.assign(status, newStatus)
-      cacheStatus(newStatus, undefined, true)
-    }).finally(() => {
-      isLoading.value[action] = false
-    })
-    // Optimistic update
+        Object.assign(status.value, newStatus)
+        cacheStatus(newStatus, undefined, true)
+      })
+      .finally(() => {
+        isLoading.value[action] = false
+      })
+
     status.value[action] = !status.value[action]
-    cacheStatus(status.value, undefined, true)
     if (countField)
       status.value[countField] += status.value[action] ? 1 : -1
   }
 
-  const canReblog = computed(() =>
-    status.value.visibility !== 'direct'
-    && (status.value.visibility !== 'private' || status.value.account.id === currentUser.value?.account.id),
-  )
+  async function logAndToggle(
+    action: Action,
+    toggleAPI: () => Promise<mastodon.v1.Status>,
+    countField?: CountField,
+  ) {
+    try {
+      const userId = getUserId()
+      const logData = {
+        user_id: userId,
+        post_id: status.value.id,
+        action_type: action,
+      }
 
-  const toggleReblog = async () => {
-    await toggleStatusAction(
+      logger.debug(`📦 Logging ${action} to Flask:`, logData)
+
+      // Log to Flask
+      await fetch('http://localhost:5001/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logData),
+      })
+
+      // Call Mastodon API & Wait for Response
+      const newStatus = await toggleAPI()
+
+      // Ensure the UI Reflects the Correct API Response
+      if (countField) {
+        const prevCount = status.value[countField]
+        if (status.value[action] && prevCount === newStatus[countField])
+          newStatus[countField] -= 1
+      }
+
+      Object.assign(status.value, newStatus)
+      cacheStatus(newStatus, undefined, true)
+
+      logger.debug(`✅ Successfully toggled ${action} on Mastodon`)
+    }
+    catch (error) {
+      console.error(`❌ Error in ${action}:`, error)
+    }
+    finally {
+      isLoading.value[action] = false
+    }
+  }
+
+  const toggleReblog = async () =>
+    logAndToggle(
       'reblogged',
-      () => client.value.v1.statuses.$select(status.value.id)[status.value.reblogged ? 'unreblog' : 'reblog']().then((res) => {
-        if (status.value.reblogged) {
-          // returns the original status
-          return res.reblog!
-        }
-        return res
-      }),
+      () =>
+        client.value.v1.statuses.$select(status.value.id)[status.value.reblogged ? 'unreblog' : 'reblog'](),
       'reblogsCount',
     )
 
-    const userId = getUserId() // Use the helper function
-    logInteraction(userId, status.value.id, 'reblogged') // Log the interaction
-  }
-
-  const toggleFavourite = async () => {
-    await toggleStatusAction(
+  const toggleFavourite = async () =>
+    logAndToggle(
       'favourited',
-      () => client.value.v1.statuses.$select(status.value.id)[status.value.favourited ? 'unfavourite' : 'favourite'](),
+      () =>
+        client.value.v1.statuses.$select(status.value.id)[status.value.favourited ? 'unfavourite' : 'favourite'](),
       'favouritesCount',
     )
 
-    const userId = getUserId() // Use the helper function
-    logInteraction(userId, status.value.id, 'favourited') // Log the interaction
-  }
-
-  const toggleBookmark = async () => {
-    await toggleStatusAction(
+  const toggleBookmark = async () =>
+    logAndToggle(
       'bookmarked',
-      () => client.value.v1.statuses.$select(status.value.id)[status.value.bookmarked ? 'unbookmark' : 'bookmark'](),
+      () =>
+        client.value.v1.statuses.$select(status.value.id)[status.value.bookmarked ? 'unbookmark' : 'bookmark'](),
     )
 
-    const userId = getUserId() // Use the helper function
-    logInteraction(userId, status.value.id, 'bookmarked') // Log the interaction
-  }
-
-  const togglePin = async () => {
-    await toggleStatusAction(
+  const togglePin = async () =>
+    logAndToggle(
       'pinned',
-      () => client.value.v1.statuses.$select(status.value.id)[status.value.pinned ? 'unpin' : 'pin'](),
+      () =>
+        client.value.v1.statuses.$select(status.value.id)[status.value.pinned ? 'unpin' : 'pin'](),
     )
 
-    const userId = getUserId() // Use the helper function
-    logInteraction(userId, status.value.id, 'pinned') // Log the interaction
-  }
-
-  const toggleMute = async () => {
-    await toggleStatusAction(
+  const toggleMute = async () =>
+    logAndToggle(
       'muted',
-      () => client.value.v1.statuses.$select(status.value.id)[status.value.muted ? 'unmute' : 'mute'](),
+      () =>
+        client.value.v1.statuses.$select(status.value.id)[status.value.muted ? 'unmute' : 'mute'](),
     )
 
-    const userId = getUserId() // Use the helper function
-    logInteraction(userId, status.value.id, 'muted') // Log the interaction
-  }
-
-  // CORGI features
   const toggleMoreLikeThis = async () => {
-    tempValues.moreLikeThis = !tempValues.moreLikeThis // Toggle the temporary value
-    status.value.more_like_this = tempValues.moreLikeThis // Update the status object
-    const userId = getUserId() // Use the helper function
-    logInteraction(userId, status.value.id, 'moreLikeThis')
+    try {
+      const userId = getUserId()
+      const logData = {
+        user_id: userId,
+        post_id: status.value.id,
+        action_type: 'more_like_this',
+        context: { some_metadata: 'example' }, // Add metadata if needed
+      }
+
+      logger.debug('📦 Logging more_like_this to Flask:', logData)
+
+      // Log to Flask
+      await fetch('http://localhost:5001/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logData),
+      })
+
+      // Update local state
+      status.value.more_like_this = !status.value.more_like_this
+    }
+    catch (error) {
+      logger.error('❌ Error in toggleMoreLikeThis:', error)
+    }
   }
 
   const toggleLessLikeThis = async () => {
-    tempValues.lessLikeThis = !tempValues.lessLikeThis // Toggle the temporary value
-    status.value.less_like_this = tempValues.lessLikeThis // Update the status object
-    const userId = getUserId() // Use the helper function
-    logInteraction(userId, status.value.id, 'lessLikeThis')
+    try {
+      const userId = getUserId()
+      const logData = {
+        user_id: userId,
+        post_id: status.value.id,
+        action_type: 'less_like_this',
+        context: { some_metadata: 'example' }, // Add metadata if needed
+      }
+
+      logger.debug('📦 Logging less_like_this to Flask:', logData)
+
+      // Log to Flask
+      await fetch('http://localhost:5001/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logData),
+      })
+
+      // Update local state
+      status.value.less_like_this = !status.value.less_like_this
+    }
+    catch (error) {
+      logger.error('❌ Error in toggleLessLikeThis:', error)
+    }
   }
 
   return {
     status,
     isLoading,
-    canReblog,
-    toggleMute,
     toggleReblog,
     toggleFavourite,
     toggleBookmark,
     togglePin,
+    toggleMute,
     toggleMoreLikeThis,
     toggleLessLikeThis,
   }

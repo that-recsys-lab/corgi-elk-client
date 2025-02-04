@@ -7,6 +7,8 @@ const props = defineProps<{
   command?: boolean
 }>()
 
+// console.log('HELLO FROM MY LOCAL ELK BUILD')
+
 const focusEditor = inject<typeof noop>('focus-editor', noop)
 
 const { details, command } = props // TODO

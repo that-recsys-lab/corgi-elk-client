@@ -66,7 +66,7 @@
     "@vueuse/math": "^11.0.3",
     "@vueuse/motion": "2.2.5",
     "@vueuse/nuxt": "^11.0.3",
-    "aws-sdk": "^2.1692.0",
+    "axios": "^1.7.9",
     "blurhash": "^2.0.5",
     "browser-fs-access": "^0.35.0",
     "cheerio": "^1.0.0",
