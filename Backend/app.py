@@ -148,36 +148,45 @@ def log_interaction():
 
 @app.route('/interactions/<post_id>', methods=['GET'])
 def get_interactions_by_post(post_id):
-    """Return all interactions for a specific post."""
+    """Return all interactions for a specific post with counts."""
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute('''
-                    SELECT user_alias, action_type, context, created_at
+                    SELECT action_type, COUNT(*) as count
                     FROM interactions
                     WHERE post_id = %s
+                    GROUP BY action_type
                 ''', (post_id,))
                 
                 interactions = cur.fetchall()
 
         if not interactions:
-            return jsonify({"message": "No interactions found"}), 404
+            return jsonify({"message": "No interactions found", "post_id": post_id}), 404
+
+        # Standardizing action types before returning them
+        ACTION_TYPE_MAPPING = {
+            "favourited": "favorite",
+            "favourite": "favorite",
+            "unfavourite": "unfavorite",
+            "bookmarked": "bookmark",
+        }
 
         return jsonify({
             "post_id": post_id,
             "interactions": [
                 {
-                    "user_alias": row[0],
-                    "action_type": row[1],
-                    "context": row[2],
-                    "created_at": row[3].isoformat()
-                } for row in interactions
+                    "action_type": ACTION_TYPE_MAPPING.get(row[0], row[0]),  # Convert spelling
+                    "count": row[1]
+                }
+                for row in interactions
             ]
         })
 
     except Exception as e:
         logger.error("Error fetching interactions: %s", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/user_data/<user_id>', methods=['GET'])
 def get_user_data(user_id):
