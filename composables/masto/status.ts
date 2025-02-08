@@ -31,6 +31,10 @@ export function useStatusActions(props: StatusActionsProps) {
     lessLikeThis: false, // CORGI feature
   })
 
+  const canReblog = computed(() => {
+    return checkLogin() && !status.value.reblogged && !isLoading.value.reblogged
+  })
+
   async function _toggleStatusAction(
     action: Action,
     fetchNewStatus: () => Promise<mastodon.v1.Status>,
@@ -199,6 +203,7 @@ export function useStatusActions(props: StatusActionsProps) {
   return {
     status,
     isLoading,
+    canReblog,
     toggleReblog,
     toggleFavourite,
     toggleBookmark,
