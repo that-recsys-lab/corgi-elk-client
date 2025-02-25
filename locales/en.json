@@ -440,6 +440,9 @@
     "search_empty": "Could not find anything for these search terms"
   },
   "settings": {
+    "data_collection": "Data Collection",
+    "enable_post_logging": "Enable Post Logging",
+    "post_logging_description": "Help us improve your experience by allowing us to collect information about the posts you view. This data is stored with your consent and can be deleted at any time.",
     "about": {
       "built_at": "Built",
       "label": "About",

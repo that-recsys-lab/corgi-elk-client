@@ -18,6 +18,10 @@ export interface UserLogin {
   account: mastodon.v1.AccountCredentials
   vapidKey?: string
   pushSubscription?: mastodon.v1.WebPushSubscription
+  preferences?: {
+    consentToPostLogging?: boolean
+    [key: string]: any
+  }
 }
 
 export type PaginatorState = 'idle' | 'loading' | 'done' | 'error'

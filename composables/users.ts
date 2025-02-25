@@ -243,6 +243,17 @@ export async function switchUser(user: UserLogin) {
   }
 }
 
+export function updateUserPreferences(preferences: Record<string, any>) {
+  if (!currentUser.value)
+    return
+
+  if (!currentUser.value.preferences)
+    currentUser.value.preferences = {}
+
+  // Update preferences
+  Object.assign(currentUser.value.preferences, preferences)
+}
+
 export async function signOut() {
   // TODO: confirm
   if (!currentUser.value)
